@@ -1,10 +1,7 @@
 from flask import request
 from flask_restful import Resource
-from werkzeug.exceptions import BadRequest
-from werkzeug.security import check_password_hash
 
 from managers.auth import AuthManager
-from models.users import User
 from schemas.request_schemas.users import UserRegisterRequestSchema, UserLoginRequestSchema
 from schemas.response_schemas.users import UserAuthResponseSchema
 from utils.decorators import validate_schema
