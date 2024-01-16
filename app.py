@@ -1,3 +1,4 @@
+from decouple import config
 from flask import Flask
 from flask_migrate import Migrate
 from flask_restful import Api
@@ -6,7 +7,7 @@ from db import db
 from resources.routes import routes
 
 app = Flask(__name__)
-app.config.from_object('config.DevelopmentConfig')  # TODO get_config from env
+app.config.from_object(config('FLASK_CONFIG'))  # DONE TODO get_config from env
 
 api = Api(app)
 migrate = Migrate(app, db)
