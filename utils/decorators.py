@@ -1,4 +1,4 @@
-from flask import request
+from flask import request, abort
 
 from werkzeug.exceptions import BadRequest, Forbidden
 
@@ -28,3 +28,10 @@ def permission_required(permission_role):
             raise Forbidden('You do not have permission to access this resource')
         return wrapper
     return decorated_function
+
+
+def get_complaint_or_abort(obj, pk):
+    complaint = obj.query.get(pk)
+    if not complaint:
+        abort(404, message=f"Complaint with ID {pk} not found")
+    return complaint
