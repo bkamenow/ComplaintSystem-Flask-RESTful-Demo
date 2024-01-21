@@ -1,10 +1,10 @@
-from flask import request, abort
-from flask_restful import Resource, reqparse
+from flask import request
+from flask_restful import Resource
 
 from db import db
 from managers.auth import auth
 from managers.complaint import ComplaintManager
-from models import RoleType, Complaint, State
+from models import RoleType, Complaint
 from schemas.request_schemas.complaints import ComplaintRequestSchema
 from schemas.response_schemas.complaints import ComplaintResponseSchema
 from utils.decorators import validate_schema, permission_required, get_complaint_or_abort
