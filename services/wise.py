@@ -92,24 +92,28 @@ class WiseService:
 
     def fund_transfer(self, transfer_id):
         url = self.main_url + f"/v3/profiles/{self.profile_id}/transfers/{transfer_id}/payments"
-        resp = requests.post(url, headers=self.headers)
+        body = {"type": "BALANCE"}
 
-        try:
-            resp.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            print(f"Transfer funding failed. Response content: {resp.content}")
-            raise err
+        resp = requests.post(url, headers=self.headers, json=body)
 
-        payment_id = resp.json()["id"]
-        return payment_id
+        return resp
+
+    def cancel_transfer(self, transfer_id):
+        url = self.main_url + f"/v1/transfers/{transfer_id}/cancel"
+
+        resp = requests.put(url, json={}, headers=self.headers)
+
+        return resp
 
 
 if __name__ == "__main__":
     wise_service = WiseService()
-    q_id = wise_service.create_quote(100)
-    recipient_id = wise_service.create_recipient_account('Bobi NEW', 'BG80BNBG96611020345678')
-    transfer = wise_service.create_transfer(recipient_id, q_id)
+    # q_id = wise_service.create_quote(100)
+    # recipient_id = wise_service.create_recipient_account('Bobi NEW', 'BG80BNBG96611020345678')
+    # transfer = wise_service.create_transfer(recipient_id, q_id)
+    wise_service.cancel_transfer(52826943)
 
-    print(q_id)
-    print(recipient_id)
-    print(transfer)
+    # print(q_id)
+    # print(recipient_id)
+    # print(transfer)
+    # print(fund_transfer)
