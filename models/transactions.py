@@ -12,5 +12,5 @@ class TransactionModel(db.Model):
     target_account_id = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     create_on = db.Column(db.DateTime, server_default=func.now())
-    complaint_id = db.Column(db.Integer, db.ForeignKey('complaints.id'))
-    complaint = db.relationship('ComplaintModel')
+    complaint_id = db.Column(db.Integer, db.ForeignKey('complaints.id'), nullable=False)
+    complaint = db.relationship('Complaint')

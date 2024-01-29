@@ -42,7 +42,7 @@ class WiseService:
             print(resp)
             raise InternalServerError("Payment provider is not available at the moment")
 
-    def create_recipient_account(self, full_name, iban):
+    def create_recipient(self, full_name, iban):
         url = self.main_url + "/v1/accounts"
         body = {
             "currency": "BGN",
@@ -106,14 +106,14 @@ class WiseService:
         return resp
 
 
-if __name__ == "__main__":
-    wise_service = WiseService()
-    # q_id = wise_service.create_quote(100)
-    # recipient_id = wise_service.create_recipient_account('Bobi NEW', 'BG80BNBG96611020345678')
-    # transfer = wise_service.create_transfer(recipient_id, q_id)
-    wise_service.cancel_transfer(52826943)
-
-    # print(q_id)
-    # print(recipient_id)
-    # print(transfer)
-    # print(fund_transfer)
+# if __name__ == "__main__":
+#     wise_service = WiseService()
+#     q_id = wise_service.create_quote(100)
+#     recipient_id = wise_service.create_recipient('Bobi NEW', 'BG80BNBG96611020345678')
+#     transfer = wise_service.create_transfer(recipient_id, q_id)
+#     wise_service.cancel_transfer(52826943)
+#
+#     # print(q_id)
+#     # print(recipient_id)
+#     # print(transfer)
+#     # print(fund_transfer)
