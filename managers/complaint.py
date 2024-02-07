@@ -1,11 +1,14 @@
+import os
 import uuid
 
 from werkzeug.exceptions import BadRequest
 
+from constants import TEMP_FILE_PATH
 from db import db
 from managers.auth import auth
 from models import Complaint, RoleType, State, TransactionModel
 from services.wise import WiseService
+from utils.helpers import decode_photo
 
 
 class ComplaintManager:
@@ -34,6 +37,12 @@ class ComplaintManager:
     def create_complaint(complaint_data):
         current_user = auth.current_user()
         complaint_data['user_id'] = current_user.id
+
+        photo_name = f"{str(uuid.uuid4())}.{complaint_data.pop('photo_extension')}"
+        path_to_store_photo = os.path.join(TEMP_FILE_PATH, photo_name)
+        photo_as_string = complaint_data.pop('photo')
+        decode_photo(path_to_store_photo, photo_as_string)
+
         complaint = Complaint(**complaint_data)
 
         amount = complaint_data['amount']

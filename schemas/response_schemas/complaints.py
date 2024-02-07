@@ -11,6 +11,7 @@ class ComplaintResponseSchema(ComplaintBase):
     user_id = fields.Integer(required=True)
     # DONE TODO: nest user inside this schema
     user = fields.Nested(UserResponseBase(), only=("id", "first_name", "last_name", "email"))
+    photo_url = fields.URL(required=True)
 
 
 class ComplaintsResponseSchema(Schema):
