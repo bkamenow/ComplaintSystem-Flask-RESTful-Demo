@@ -16,4 +16,6 @@ class UserResponseBase(Schema):
 class ComplaintBase(Schema):
     title = fields.String(required=True)
     description = fields.String(required=True)
+    photo = fields.String(required=True)
+    photo_extension = fields.String(required=True)
     amount = fields.Float(required=True)

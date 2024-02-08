@@ -1,14 +1,18 @@
 import os
 import uuid
 
+from decouple import config
 from werkzeug.exceptions import BadRequest
 
 from constants import TEMP_FILE_PATH
 from db import db
 from managers.auth import auth
 from models import Complaint, RoleType, State, TransactionModel
+from services.s3 import S3Service
 from services.wise import WiseService
 from utils.helpers import decode_photo
+
+s3_service = S3Service()
 
 
 class ComplaintManager:
@@ -42,6 +46,15 @@ class ComplaintManager:
         path_to_store_photo = os.path.join(TEMP_FILE_PATH, photo_name)
         photo_as_string = complaint_data.pop('photo')
         decode_photo(path_to_store_photo, photo_as_string)
+
+        try:
+            url = s3_service.upload_photo(path_to_store_photo, photo_name)
+        except Exception as ex:
+            raise Exception("Upload to s3 failed")
+        finally:
+            os.remove(path_to_store_photo)
+
+        complaint_data["photo_url"] = url
 
         complaint = Complaint(**complaint_data)
 

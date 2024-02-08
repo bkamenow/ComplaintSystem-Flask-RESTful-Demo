@@ -8,18 +8,21 @@ from werkzeug.exceptions import InternalServerError
 
 class S3Service:
     def __init__(self):
-        self.key = config("AWS_ACCESS_KEY")
-        self.secret = config("AWS_SECRET")
-        self.s3 = boto3.client(
+        self.s3 = boto3.resource(
             "s3",
-            aws_access_key_id=self.key,
-            aws_secret_access_key=self.secret,
+            aws_access_key_id=config("AWS_ACCESS_KEY"),
+            aws_secret_access_key=config("AWS_SECRET"),
         )
-        self.bucket = config("AWS_BUCKET")
 
-    def upload_photo(self, path, key, ext):
+    def upload_photo(self, file_path, file_name, bucket=None, region=None):
+        if not bucket:
+            bucket = config("AWS_BUCKET")
+        if not region:
+            region = config("AWS_REGION")
+
         try:
-            self.s3.upload_file(path, self.bucket, key, ExtraArgs={'ACL': 'public-read', 'ContentType': f'image/{ext}'})
-            return f"https://{config('AWS_BUCKET')}.s3.{config('AWS_REGION')}.amazonaws.com/{key}"
+            self.s3.meta.client.upload_file(file_path, bucket, file_name)
+
+            return f"https://{bucket}.s3.{region}.amazonaws.com/{file_name}"
         except ClientError:
             raise InternalServerError("S3 is not available at the moment")
