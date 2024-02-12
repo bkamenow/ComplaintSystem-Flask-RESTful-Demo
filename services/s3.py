@@ -21,6 +21,7 @@ class S3Service:
             region = config("AWS_REGION")
 
         try:
+            # TODO ExtraArgs={'ACL': 'public-read', 'ContentType': f'image/{file_name}'}
             self.s3.meta.client.upload_file(file_path, bucket, file_name)
 
             return f"https://{bucket}.s3.{region}.amazonaws.com/{file_name}"
