@@ -1,36 +1,65 @@
-import json
-
-from flask_testing import TestCase
-
-from config import create_app
-from db import db
+from models import RoleType
+from tests.base import TestRESTAPIBase, generate_token
+from tests.factories import UserFactory
 
 
-class TestApp(TestCase):
-    def create_app(self):
-        return create_app("config.TestingConfig")
-
-    def setUp(self):
-        db.init_app(self.app)
-        db.create_all()
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-
-    def test_protected(self):
-        for method, url in [
-            ("PUT", "/approvers/complaints/1/approve"),
-            ("PUT", "/approvers/complaints/1/reject"),
-            ("GET", "/complainers/complaints"),
-            ("POST", "/complainers/complaints"),
-        ]:
-            if method == "POST":
-                resp = self.client.post(url, data=json.dumps({}),)
-            elif method == "GET":
-                resp = self.client.get(url)
+class TestLoginAndAuthorizationRequired(TestRESTAPIBase):
+    def test_auth_is_required(self):
+        all_guarded_urls = [
+            ("GET", "/complaints"),
+            ("POST", "/complaints"),
+            ("GET", "/complaints/1/approve"),
+            ("GET", "/complaints/1/reject"),
+        ]
+        for method, url in all_guarded_urls:
+            if method == "GET":
+                res = self.client.get(url)
+            elif method == "POST":
+                res = self.client.post(url)
             elif method == "PUT":
-                resp = self.client.put(url, data=json.dumps({}),)
+                res = self.client.put("url")
             else:
-                resp = self.client.delete(url)
-            self.assert401(resp, {'message': 'Invalid or missing token'})
+                res = self.client.delete(url)
+
+            assert res.status_code == 401
+            assert res.json == {'message': 'Invalid or missing token'}
+
+    def test_permission_required_create_complaint_requires_complainer(self):
+        user = UserFactory(role=RoleType.approver)
+        token = generate_token(user)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        res = self.client.post("/complaints", headers=headers)
+        assert res.status_code == 403
+        assert res.json == {"message": "You do not have permission to access this resource"}
+
+        # Test superuser username is not allowed as well
+        user = UserFactory(role=RoleType.admin)
+        token = generate_token(user)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        res = self.client.post("/complaints", headers=headers)
+        assert res.status_code == 403
+        assert res.json == {"message": "You do not have permission to access this resource"}
+
+    def test_permission_required_approve_reject_complaint_requires_approver(self):
+        user = UserFactory(role=RoleType.admin)
+        token = generate_token(user)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        res = self.client.get("/complaints/1/approve", headers=headers)
+        assert res.status_code == 403
+        assert res.json == {"message": "You do not have permission to access this resource"}
+
+        res = self.client.get("/complaints/1/reject", headers=headers)
+        assert res.status_code == 403
+        assert res.json == {"message": "You do not have permission to access this resource"}
+
+        # Test with complainer
+        user = UserFactory(role=RoleType.complainer)
+        token = generate_token(user)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        res = self.client.get("/complaints/1/approve", headers=headers)
+        assert res.status_code == 403
+        assert res.json == {"message": "You do not have permission to access this resource"}

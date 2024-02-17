@@ -1,10 +1,9 @@
 import os
 import uuid
 
-from decouple import config
 from werkzeug.exceptions import BadRequest
 
-from constants import TEMP_FILE_PATH
+from constants import TEMP_FILES_PATH
 from db import db
 from managers.auth import auth
 from models import Complaint, RoleType, State, TransactionModel
@@ -43,7 +42,7 @@ class ComplaintManager:
         complaint_data['user_id'] = current_user.id
 
         photo_name = f"{str(uuid.uuid4())}.{complaint_data.pop('photo_extension')}"
-        path_to_store_photo = os.path.join(TEMP_FILE_PATH, photo_name)
+        path_to_store_photo = os.path.join(TEMP_FILES_PATH, photo_name)
         photo_as_string = complaint_data.pop('photo')
         decode_photo(path_to_store_photo, photo_as_string)
 
@@ -59,6 +58,10 @@ class ComplaintManager:
         complaint = Complaint(**complaint_data)
 
         amount = complaint_data['amount']
+
+        if amount <= 0:
+            raise BadRequest({'amount': ['Must be greater than or equal to 0.01.']})
+
         full_name = f'{current_user.first_name} {current_user.last_name}'
         iban = current_user.iban
 
