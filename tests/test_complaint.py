@@ -1,6 +1,13 @@
-from models import RoleType
-from tests.base import TestRESTAPIBase, generate_token
-from tests.factories import UserFactory
+import os
+from unittest.mock import patch
+
+from constants import TEMP_FILES_PATH
+from managers.complaint import ComplaintManager
+from models import RoleType, Complaint, State
+from services.s3 import S3Service
+from services.wise import WiseService
+from tests.base import TestRESTAPIBase, generate_token, mock_uuid
+from tests.factories import UserFactory, ComplaintFactory, TransactionFactory
 from tests.helpers import encoded_photo
 
 
@@ -59,3 +66,74 @@ class TestComplaintSchema(TestRESTAPIBase):
         }
 
 
+# TODO FIX THIS
+class TestComplaints(TestRESTAPIBase):
+    @patch("uuid.uuid4", mock_uuid)
+    @patch.object(ComplaintManager, "issue_transaction", return_value=None)
+    @patch.object(S3Service, "upload_photo", return_value="some_url.com")
+    def test_create_complaints(self, mock_s3_upload, mocked_transaction):
+        complaints = Complaint.query.all()
+        assert len(complaints) == 0
+
+        user = UserFactory(role=RoleType.complainer)
+        token = generate_token(user)
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+
+        data = {
+            "title": "Test",
+            "description": "test desc",
+            "photo_extension": "jpg",
+            "amount": 20,
+            "photo": encoded_photo,
+        }
+
+        res = self.client.post("/complaints", headers=headers, json=data)
+
+        complaints = Complaint.query.all()
+        assert len(complaints) == 1
+        assert res.status_code == 201
+        assert res.json["photo_url"] == "some_url.com"
+        assert res.json["status"] == State.pending.value
+
+        expected_photo_name = f"{mock_uuid()}.{data['photo_extension']}"
+        expected_file_path = os.path.join(TEMP_FILES_PATH, expected_photo_name)
+        mock_s3_upload.assert_called_once_with(expected_file_path, expected_photo_name)
+
+        full_name = f"{user.first_name} {user.last_name}"
+        mocked_transaction.assert_called_once_with(
+            data["amount"], full_name, user.iban, complaints[0].id
+        )
+
+    @patch.object(WiseService, "fund_transfer", return_value=None)
+    def test_approve_complaints(self, mocked_fund_transfer):
+        approver = UserFactory(role=RoleType.approver)
+        complainer = UserFactory()
+
+        token = generate_token(approver)
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+
+        complaint = ComplaintFactory(user_id=complainer.id)
+        transaction = TransactionFactory(complaint_id=complaint.id)
+
+        complaints = Complaint.query.all()
+        assert len(complaints) == 1
+        assert complaints[0].status == State.pending
+
+        url = f"/complaints/{complaint.id}/approve"
+        res = self.client.get(url, headers=headers)
+
+        # TODO: refactor code to return 204
+        assert res.status_code == 200
+
+        complaints = Complaint.query.all()
+        assert len(complaints) == 1
+        assert complaints[0].status == State.approved
+
+        mocked_fund_transfer.assert_called_once_with(transaction.transfer_id)

@@ -43,7 +43,7 @@ class ComplaintFactory(BaseFactory):
     description = "Mocked desc"
     photo_url = "example.url"
     amount = 20
-    created_at = "2020-01-01"
+    create_on = "2020-01-01"
     status = State.pending.name
     user_id = factory.LazyFunction(get_user_id)
 
@@ -59,7 +59,6 @@ class TransactionFactory(BaseFactory):
     id = factory.Sequence(lambda n: n)
     quote_id = mock_uuid()
     transfer_id = mock_uuid()
-    custom_transfer_id = mock_uuid()
     target_account_id = mock_uuid()
     amount = 20
     create_on = "2020-01-01"

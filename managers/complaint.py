@@ -59,7 +59,7 @@ class ComplaintManager:
 
         amount = complaint_data['amount']
 
-        if amount <= 0:
+        if int(amount) <= 0:
             raise BadRequest({'amount': ['Must be greater than or equal to 0.01.']})
 
         full_name = f'{current_user.first_name} {current_user.last_name}'
@@ -68,12 +68,10 @@ class ComplaintManager:
         db.session.add(complaint)
         db.session.flush()
 
-        transaction = ComplaintManager.issue_transaction(amount, full_name, iban, complaint.id)
-
-        db.session.add(transaction)
-        db.session.flush()
+        ComplaintManager.issue_transaction(
+            amount, full_name, iban, complaint.id
+        )
         db.session.commit()
-
         return complaint
 
     @staticmethod
